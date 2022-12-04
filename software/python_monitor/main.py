@@ -4,16 +4,46 @@ import PIL.Image
 import io
 import time
 import cv2
+import signal
 import matplotlib.pyplot as plt
 from PIL import ImageFile
 import numpy as np
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-# make sure the 'COM#' is set according the Windows Device Manager
-ser = serial.Serial('COM3', 3000000, timeout=1)
+ser = serial.Serial('COM3', 3000000, timeout=None)
 img = bytearray(b'')
-ser.write(b'\x01')
 faceCascade = cv2.CascadeClassifier("assets\\haarcascade.xml")
+
+def main():
+    # make sure the 'COM#' is set according the Windows Device Manager
+    ser.write(b'\x01')
+
+    signal.signal(signal.SIGINT, stop_stream)
+
+    #create two subplots
+    ax = plt.gca()
+
+    #create two image plots
+    im = ax.imshow(get_img())
+
+    plt.ion()
+
+    frame_times = []
+
+    while True:
+        now = time.time()
+        ser.write(b'\x01')
+        im.set_data(get_img())
+        plt.pause(0.001)
+
+
+
+    plt.ioff() # due to infinite loop, this gets never called.
+    plt.show()
+
+    ser.close()
+
+def stop_stream():
+    ser.write(b'0x2')
 
 def get_img():
     #send start condition for photo
@@ -26,19 +56,25 @@ def get_img():
             break
 
     now = time.time()
-    time.sleep(.08) #wait for image to be fully sent over serial bus
+    # I hate this because the time for message to be sent varies and this can crash the program
+    # time.sleep(.08) #wait for image to be fully sent over serial bus
                     #avg image ~3500 bytes which can be sent at 4.6ms (apparently take more time, idk)
                     #using 10 here to be safe
-    img = ser.read_all()
+    
+    img = ser.read_until(b"\n\n\n", 8000)
+    # print(img)
+    img = img[:-3]
     # while byte != b'':
     #     byte = ser.read()
     #     # print(byte)
     #     img.extend(byte)
     # print(ser.readline())
         # print(img)
-    print(len(img))
-    print(f"One img trans: {time.time() - now}")
+    
+    # print(len(img))
+    # print(f"One img trans: {time.time() - now}")
     image_np = np.frombuffer(img, np.uint8)
+    # print(image_np)
     imageBGR = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
 
     faces = faceCascade.detectMultiScale(
@@ -55,34 +91,10 @@ def get_img():
 
     return imageRGB
 
-#create two subplots
-ax = plt.gca()
-
-#create two image plots
-im = ax.imshow(get_img())
-
-print('hello')
-plt.ion()
-
-i = 0
-for i in range(200):
-    ser.write(b'\x01')
-    print('hello')
-    imag = get_img()
-    print('hello')
-    im.set_data(imag)
-    plt.pause(0.05)
-    i+= 1
-
-
-plt.ioff() # due to infinite loop, this gets never called.
-plt.show()
-
-ser.close()
-
 # print()
 
-
+if __name__ == "__main__":
+    main()
 
 
 # print()
