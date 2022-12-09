@@ -8,6 +8,7 @@ import signal
 import matplotlib.pyplot as plt
 from PIL import ImageFile
 import numpy as np
+import sys
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 ser = serial.Serial('COM3', 3000000, timeout=None)
 img = bytearray(b'')
@@ -17,7 +18,7 @@ def main():
     # make sure the 'COM#' is set according the Windows Device Manager
     ser.write(b'\x01')
 
-    signal.signal(signal.SIGINT, stop_stream)
+    signal.signal(signal.SIGINT, stop_stream) 
 
     #create two subplots
     ax = plt.gca()
@@ -32,8 +33,11 @@ def main():
     while True:
         now = time.time()
         ser.write(b'\x01')
-        im.set_data(get_img())
-        plt.pause(0.001)
+        try:
+            im.set_data(get_img())
+        except:
+            continue
+        plt.pause(0.01)
 
 
 
@@ -71,11 +75,13 @@ def get_img():
     # print(ser.readline())
         # print(img)
     
-    # print(len(img))
+    print(sys.getsizeof(img))
     # print(f"One img trans: {time.time() - now}")
     image_np = np.frombuffer(img, np.uint8)
     # print(image_np)
     imageBGR = cv2.imdecode(image_np, cv2.IMREAD_COLOR)
+
+# image = cv2.cvtColor(imageBGR , cv2.COLOR_BGR2GRAY)
 
     faces = faceCascade.detectMultiScale(
         cv2.cvtColor(imageBGR , cv2.COLOR_BGR2GRAY),

@@ -11,6 +11,7 @@
 #include <ArduCAM.h>
 #include <SPI.h>
 #include "memorysaver.h"
+#include <Vector.h>
 //This demo can only work on OV2640_MINI_2MP platform.
 
 #define BMPIMAGEOFFSET 66
@@ -117,6 +118,8 @@ void loop() {
       myCAM.set_fifo_burst();//Set fifo burst mode
       temp =  SPI.transfer(0x00);
       Serial.write(0xFF);
+      // uint8_t storage[7000];
+      // Vector<uint8_t> img(storage);
       length --;
       while ( length-- )
       {
@@ -125,16 +128,20 @@ void loop() {
         if (is_header == true)
         {
           Serial.write(temp);
+          // img.push_back(temp);
         }
         else if ((temp == 0xD8) & (temp_last == 0xFF))
         {
           is_header = true;
           // Serial.println(F("ACK IMG END"));
+          // img.push_back(temp_last);
+          // img.push_back(temp);
           Serial.write(temp_last);
           Serial.write(temp);
         }
         if ( (temp == 0xD9) && (temp_last == 0xFF) ) { //If find the end ,break while,
           Serial.write("\n\n\n");
+          // Serial.write(img.size());
           break; 
         }
         delayMicroseconds(15);
