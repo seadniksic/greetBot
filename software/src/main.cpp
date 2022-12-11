@@ -167,17 +167,14 @@ void loop() {
 
       // uint16_t centerFaceX = Serial.parseInt();
       // uint16_t centerFaceY = Serial.parseInt();
-      unsigned char faceCoords[4];
+      char faceCoords[4];
       uint16_t xCoord, yCoord;
       uint16_t coordsBuffer[2];
       char *bytes = (char *) coordsBuffer; 
 
       while (Serial.read() != 0xFF) continue;
 
-      faceCoords[0] = Serial.read();
-      faceCoords[1] = Serial.read();
-      faceCoords[2] = Serial.read();
-      faceCoords[3] = Serial.read();
+      Serial.readBytes(faceCoords, 4);
 
       xCoord = faceCoords[0] + faceCoords[1];
       yCoord = faceCoords[2] + faceCoords[3];
