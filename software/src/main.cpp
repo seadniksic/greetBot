@@ -30,6 +30,17 @@ int mode = 0;
 uint8_t start_capture = 0;
 ArduCAM myCAM( OV2640, CS );
 uint8_t read_fifo_burst(ArduCAM myCAM);
+uint8_t centerX = 160;
+uint8_t centerY = 120;
+
+
+union ArrayToInteger {
+  byte array[2];
+  uint32_t integer;
+};
+
+
+
 void setup() {
 
   uint8_t vid, pid;
@@ -96,10 +107,10 @@ void loop() {
   bool is_header = false;
 
     temp = Serial.read();
-    if (temp == 0x2) {
-      start_capture = 0;
-    }
-    if (temp == 0x1|| start_capture == 2) {
+    // if (temp == 0x2) {
+    //   start_capture = 0;
+    // }
+    if (temp == 0x1) {
       myCAM.flush_fifo();
       myCAM.clear_fifo_flag();
       //Start capture
@@ -130,7 +141,7 @@ void loop() {
           Serial.write(temp);
           // img.push_back(temp);
         }
-        else if ((temp == 0xD8) & (temp_last == 0xFF))
+        else if ((temp == 0xD8) & (temp_last == 0xFF)) //first two bytes of jpeg standard
         {
           is_header = true;
           // Serial.println(F("ACK IMG END"));
@@ -148,97 +159,137 @@ void loop() {
       }
       myCAM.CS_HIGH();
       myCAM.clear_fifo_flag();
-      start_capture = 2;
+      // start_capture = 0;
       is_header = false;
       }
     }
-    switch (temp)
-    {
-       case 0x40:
-    myCAM.OV2640_set_Light_Mode(Auto);temp = 0xff;
-    Serial.println(F("ACK CMD Set to Auto END"));break;
-     case 0x41:
-    myCAM.OV2640_set_Light_Mode(Sunny);temp = 0xff;
-    Serial.println(F("ACK CMD Set to Sunny END"));break;
-     case 0x42:
-    myCAM.OV2640_set_Light_Mode(Cloudy);temp = 0xff;
-    Serial.println(F("ACK CMD Set to Cloudy END"));break;
-     case 0x43:
-    myCAM.OV2640_set_Light_Mode(Office);temp = 0xff;
-    Serial.println(F("ACK CMD Set to Office END"));break;
-   case 0x44:
-    myCAM.OV2640_set_Light_Mode(Home);   temp = 0xff;
-   Serial.println(F("ACK CMD Set to Home END"));break;
-   case 0x50:
-    myCAM.OV2640_set_Color_Saturation(Saturation2); temp = 0xff;
-     Serial.println(F("ACK CMD Set to Saturation+2 END"));break;
-   case 0x51:
-     myCAM.OV2640_set_Color_Saturation(Saturation1); temp = 0xff;
-     Serial.println(F("ACK CMD Set to Saturation+1 END"));break;
-   case 0x52:
-    myCAM.OV2640_set_Color_Saturation(Saturation0); temp = 0xff;
-     Serial.println(F("ACK CMD Set to Saturation+0 END"));break;
-    case 0x53:
-    myCAM. OV2640_set_Color_Saturation(Saturation_1); temp = 0xff;
-     Serial.println(F("ACK CMD Set to Saturation-1 END"));break;
-    case 0x54:
-     myCAM.OV2640_set_Color_Saturation(Saturation_2); temp = 0xff;
-     Serial.println(F("ACK CMD Set to Saturation-2 END"));break; 
-   case 0x60:
-    myCAM.OV2640_set_Brightness(Brightness2); temp = 0xff;
-     Serial.println(F("ACK CMD Set to Brightness+2 END"));break;
-   case 0x61:
-     myCAM.OV2640_set_Brightness(Brightness1); temp = 0xff;
-     Serial.println(F("ACK CMD Set to Brightness+1 END"));break;
-   case 0x62:
-    myCAM.OV2640_set_Brightness(Brightness0); temp = 0xff;
-     Serial.println(F("ACK CMD Set to Brightness+0 END"));break;
-    case 0x63:
-    myCAM. OV2640_set_Brightness(Brightness_1); temp = 0xff;
-     Serial.println(F("ACK CMD Set to Brightness-1 END"));break;
-    case 0x64:
-     myCAM.OV2640_set_Brightness(Brightness_2); temp = 0xff;
-     Serial.println(F("ACK CMD Set to Brightness-2 END"));break; 
-    case 0x70:
-      myCAM.OV2640_set_Contrast(Contrast2);temp = 0xff;
-     Serial.println(F("ACK CMD Set to Contrast+2 END"));break; 
-    case 0x71:
-      myCAM.OV2640_set_Contrast(Contrast1);temp = 0xff;
-     Serial.println(F("ACK CMD Set to Contrast+1 END"));break;
-     case 0x72:
-      myCAM.OV2640_set_Contrast(Contrast0);temp = 0xff;
-     Serial.println(F("ACK CMD Set to Contrast+0 END"));break;
-    case 0x73:
-      myCAM.OV2640_set_Contrast(Contrast_1);temp = 0xff;
-     Serial.println(F("ACK CMD Set to Contrast-1 END"));break;
-   case 0x74:
-      myCAM.OV2640_set_Contrast(Contrast_2);temp = 0xff;
-     Serial.println(F("ACK CMD Set to Contrast-2 END"));break;
-   case 0x80:
-    myCAM.OV2640_set_Special_effects(Antique);temp = 0xff;
-    Serial.println(F("ACK CMD Set to Antique END"));break;
-   case 0x81:
-    myCAM.OV2640_set_Special_effects(Bluish);temp = 0xff;
-    Serial.println(F("ACK CMD Set to Bluish END"));break;
-   case 0x82:
-    myCAM.OV2640_set_Special_effects(Greenish);temp = 0xff;
-    Serial.println(F("ACK CMD Set to Greenish END"));break;  
-   case 0x83:
-    myCAM.OV2640_set_Special_effects(Reddish);temp = 0xff;
-    Serial.println(F("ACK CMD Set to Reddish END"));break;  
-   case 0x84:
-    myCAM.OV2640_set_Special_effects(BW);temp = 0xff;
-    Serial.println(F("ACK CMD Set to BW END"));break; 
-  case 0x85:
-    myCAM.OV2640_set_Special_effects(Negative);temp = 0xff;
-    Serial.println(F("ACK CMD Set to Negative END"));break; 
-  case 0x86:
-    myCAM.OV2640_set_Special_effects(BWnegative);temp = 0xff;
-    Serial.println(F("ACK CMD Set to BWnegative END"));break;   
-   case 0x87:
-    myCAM.OV2640_set_Special_effects(Normal);temp = 0xff;
-    Serial.println(F("ACK CMD Set to Normal END"));break;     
-  }
+    if (temp == 0x3) {
+
+      // uint16_t centerFaceX = Serial.parseInt();
+      // uint16_t centerFaceY = Serial.parseInt();
+      unsigned char faceCoords[4];
+      uint16_t xCoord, yCoord;
+      uint16_t coordsBuffer[2];
+      char *bytes = (char *) coordsBuffer; 
+
+      while (Serial.read() != 0xFF) continue;
+
+      faceCoords[0] = Serial.read();
+      faceCoords[1] = Serial.read();
+      faceCoords[2] = Serial.read();
+      faceCoords[3] = Serial.read();
+
+      xCoord = faceCoords[0] + faceCoords[1];
+      yCoord = faceCoords[2] + faceCoords[3];
+
+      // diffX = abs(centerX -  )
+
+      // x1 = Serial.read();
+      // x2 = Serial.read();
+
+      // ArrayToInteger centerFaceX;
+      // ArrayToInteger centerFaceY;
+
+      // centerFaceX.array[0] = Serial.read();
+      // centerFaceX.array[1] = Serial.read();
+      // centerFaceY.array[0] = Serial.read();
+      // centerFaceY.array[1] = Serial.read();
+
+      Serial.write(0xFF);
+
+      coordsBuffer[0] = xCoord;
+      coordsBuffer[1] = yCoord;
+
+      Serial.write(bytes, 4);
+
+    }
+  //   switch (temp)
+  //   {
+  //      case 0x40:
+  //   myCAM.OV2640_set_Light_Mode(Auto);temp = 0xff;
+  //   Serial.println(F("ACK CMD Set to Auto END"));break;
+  //    case 0x41:
+  //   myCAM.OV2640_set_Light_Mode(Sunny);temp = 0xff;
+  //   Serial.println(F("ACK CMD Set to Sunny END"));break;
+  //    case 0x42:
+  //   myCAM.OV2640_set_Light_Mode(Cloudy);temp = 0xff;
+  //   Serial.println(F("ACK CMD Set to Cloudy END"));break;
+  //    case 0x43:
+  //   myCAM.OV2640_set_Light_Mode(Office);temp = 0xff;
+  //   Serial.println(F("ACK CMD Set to Office END"));break;
+  //  case 0x44:
+  //   myCAM.OV2640_set_Light_Mode(Home);   temp = 0xff;
+  //  Serial.println(F("ACK CMD Set to Home END"));break;
+  //  case 0x50:
+  //   myCAM.OV2640_set_Color_Saturation(Saturation2); temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Saturation+2 END"));break;
+  //  case 0x51:
+  //    myCAM.OV2640_set_Color_Saturation(Saturation1); temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Saturation+1 END"));break;
+  //  case 0x52:
+  //   myCAM.OV2640_set_Color_Saturation(Saturation0); temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Saturation+0 END"));break;
+  //   case 0x53:
+  //   myCAM. OV2640_set_Color_Saturation(Saturation_1); temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Saturation-1 END"));break;
+  //   case 0x54:
+  //    myCAM.OV2640_set_Color_Saturation(Saturation_2); temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Saturation-2 END"));break; 
+  //  case 0x60:
+  //   myCAM.OV2640_set_Brightness(Brightness2); temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Brightness+2 END"));break;
+  //  case 0x61:
+  //    myCAM.OV2640_set_Brightness(Brightness1); temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Brightness+1 END"));break;
+  //  case 0x62:
+  //   myCAM.OV2640_set_Brightness(Brightness0); temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Brightness+0 END"));break;
+  //   case 0x63:
+  //   myCAM. OV2640_set_Brightness(Brightness_1); temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Brightness-1 END"));break;
+  //   case 0x64:
+  //    myCAM.OV2640_set_Brightness(Brightness_2); temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Brightness-2 END"));break; 
+  //   case 0x70:
+  //     myCAM.OV2640_set_Contrast(Contrast2);temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Contrast+2 END"));break; 
+  //   case 0x71:
+  //     myCAM.OV2640_set_Contrast(Contrast1);temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Contrast+1 END"));break;
+  //    case 0x72:
+  //     myCAM.OV2640_set_Contrast(Contrast0);temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Contrast+0 END"));break;
+  //   case 0x73:
+  //     myCAM.OV2640_set_Contrast(Contrast_1);temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Contrast-1 END"));break;
+  //  case 0x74:
+  //     myCAM.OV2640_set_Contrast(Contrast_2);temp = 0xff;
+  //    Serial.println(F("ACK CMD Set to Contrast-2 END"));break;
+  //  case 0x80:
+  //   myCAM.OV2640_set_Special_effects(Antique);temp = 0xff;
+  //   Serial.println(F("ACK CMD Set to Antique END"));break;
+  //  case 0x81:
+  //   myCAM.OV2640_set_Special_effects(Bluish);temp = 0xff;
+  //   Serial.println(F("ACK CMD Set to Bluish END"));break;
+  //  case 0x82:
+  //   myCAM.OV2640_set_Special_effects(Greenish);temp = 0xff;
+  //   Serial.println(F("ACK CMD Set to Greenish END"));break;  
+  //  case 0x83:
+  //   myCAM.OV2640_set_Special_effects(Reddish);temp = 0xff;
+  //   Serial.println(F("ACK CMD Set to Reddish END"));break;  
+  //  case 0x84:
+  //   myCAM.OV2640_set_Special_effects(BW);temp = 0xff;
+  //   Serial.println(F("ACK CMD Set to BW END"));break; 
+  // case 0x85:
+  //   myCAM.OV2640_set_Special_effects(Negative);temp = 0xff;
+  //   Serial.println(F("ACK CMD Set to Negative END"));break; 
+  // case 0x86:
+  //   myCAM.OV2640_set_Special_effects(BWnegative);temp = 0xff;
+  //   Serial.println(F("ACK CMD Set to BWnegative END"));break;   
+  //  case 0x87:
+  //   myCAM.OV2640_set_Special_effects(Normal);temp = 0xff;
+  //   Serial.println(F("ACK CMD Set to Normal END"));break;     
+  // }
     
   }
 
