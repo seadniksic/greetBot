@@ -170,7 +170,8 @@ void loop() {
       char faceCoords[4];
       uint16_t xCoord, yCoord;
       uint16_t coordsBuffer[2];
-      char *bytes = (char *) coordsBuffer; 
+      char *bytes = (char *) coordsBuffer; //allows us to store each coordinate as a uint16, but transmit each byte over serial (2 bytes per index)
+      uint16_t diffX, diffY;
 
       while (Serial.read() != 0xFF) continue;
 
@@ -179,7 +180,11 @@ void loop() {
       xCoord = faceCoords[0] + faceCoords[1];
       yCoord = faceCoords[2] + faceCoords[3];
 
-      // diffX = abs(centerX -  )
+      diffX = abs(centerX - xCoord);
+      diffY = abs(centerY - yCoord);
+
+      
+
 
       // x1 = Serial.read();
       // x2 = Serial.read();
