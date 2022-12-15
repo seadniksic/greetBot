@@ -12,6 +12,7 @@
 #include <SPI.h>
 #include "memorysaver.h"
 #include <Vector.h>
+#include <Servo.h>
 //This demo can only work on OV2640_MINI_2MP platform.
 
 #define BMPIMAGEOFFSET 66
@@ -30,8 +31,10 @@ int mode = 0;
 uint8_t start_capture = 0;
 ArduCAM myCAM( OV2640, CS );
 uint8_t read_fifo_burst(ArduCAM myCAM);
-uint8_t centerX = 160;
-uint8_t centerY = 120;
+int32_t centerX = 160;
+int32_t centerY = 120;
+int pos = 0;
+float Kpx, Kpy;
 
 
 union ArrayToInteger {
@@ -40,11 +43,29 @@ union ArrayToInteger {
 };
 
 
+Servo cam;
+Servo base;
+Servo test;
+uint8_t cam_angle;
+int8_t base_angle;
 
 void setup() {
 
   uint8_t vid, pid;
   uint8_t temp;
+  
+
+  // cam.write(90);
+  // base.write(90);
+
+  
+
+  cam.attach(5);
+  base.attach(2);
+
+  cam.write(90);
+  base.write(90);
+  // test.attach(5);
 
   Wire.begin();
   Serial.begin(3000000);
@@ -97,11 +118,11 @@ void setup() {
   myCAM.OV2640_set_JPEG_size(OV2640_320x240);
   delay(1000);
   myCAM.clear_fifo_flag();
+  
 }
 
 void loop() {
 
-  //send 0x20 to start video streaming 0x21
   // put your main code here, to run repeatedly:
   uint8_t temp = 0xff, temp_last = 0;
   bool is_header = false;
@@ -168,23 +189,91 @@ void loop() {
       // uint16_t centerFaceX = Serial.parseInt();
       // uint16_t centerFaceY = Serial.parseInt();
       char faceCoords[4];
-      uint16_t xCoord, yCoord;
-      uint16_t coordsBuffer[2];
-      char *bytes = (char *) coordsBuffer; //allows us to store each coordinate as a uint16, but transmit each byte over serial (2 bytes per index)
-      uint16_t diffX, diffY;
+      int32_t xCoord, yCoord;
+      uint16_t coordsBuffer[1] = {0};
+      int32_t diffBuffer[1] = {0};
+      char *bytes = (char *) diffBuffer; //allows us to store each coordinate as a uint16, but transmit each byte over serial (2 bytes per index)
+      int32_t diffX, diffY;
 
       while (Serial.read() != 0xFF) continue;
 
-      Serial.readBytes(faceCoords, 4);
+      // Serial.readBytes(faceCoords, 4);
 
-      xCoord = faceCoords[0] + faceCoords[1];
-      yCoord = faceCoords[2] + faceCoords[3];
+      faceCoords[0] = Serial.read();
+      faceCoords[1] = Serial.read();
+      faceCoords[2] = Serial.read();
+      faceCoords[3] = Serial.read();
 
-      diffX = abs(centerX - xCoord);
-      diffY = abs(centerY - yCoord);
+      xCoord = (faceCoords[1] << 8) + faceCoords[0];
+      yCoord = (faceCoords[3] << 8) + faceCoords[2];
+
+      // coordsBuffer[0] = xCoord;
+
+      diffX = centerX - xCoord;
+      diffY = centerY - yCoord;
+
+      // diffBuffer[0] = diffX;
+      
+      // if (diffX < 0 ) {
+
+
+      // } else {
+
+      // }
+      // Serial.write(bytes, 4);
 
       
 
+      // Serial.write(bytes, 2);
+
+      if (xCoord != 0 || yCoord != 0) {
+        // face found 
+
+        // diffX = centerX - xCoord;
+        // diffY = centerY - yCoord;
+
+        // diffBuffer[0] = diffX;
+        if (abs(diffX) > 10) {
+          base_angle = base.read();
+          Kpx = diffX / 17;
+          if(diffX < 0) {
+            if (base_angle > 10) {
+              base.write(base_angle - abs((int) Kpx));
+            }
+          } else if (diffX >= 0) {
+
+            // Serial.write(0x04);
+            // Serial.write('f');
+
+            if (base_angle < 160) {
+              //CANNNOT WRITE 1 degree > base angle in this specific direction for some reason
+              base.write(base_angle + abs((int) (Kpx + 1)));
+            }
+          }
+        }
+
+        if (abs(diffY) > 1) {
+          cam_angle = cam.read();
+          Kpy = diffY / 17;
+          if(diffY >= 0) {
+            if (cam_angle > 10) {
+              cam.write(cam_angle - abs((int) Kpy));
+            }
+          } else if (diffY < 0) {
+
+            // Serial.write(0x04);
+            // Serial.write('f');
+
+            if (cam_angle < 160) {
+              //CANNNOT WRITE 1 degree > base angle in this specific direction for some reason
+              cam.write(cam_angle + abs((int) (Kpy + 1)));
+            }
+          }
+        }
+
+      }
+
+      // Serial.write(bytes, 2);
 
       // x1 = Serial.read();
       // x2 = Serial.read();
@@ -197,201 +286,13 @@ void loop() {
       // centerFaceY.array[0] = Serial.read();
       // centerFaceY.array[1] = Serial.read();
 
-      Serial.write(0xFF);
+      // Serial.write(0xFF);
 
-      coordsBuffer[0] = xCoord;
-      coordsBuffer[1] = yCoord;
+      // coordsBuffer[0] = xCoord;
+      // coordsBuffer[1] = yCoord;
 
-      Serial.write(bytes, 4);
+      // Serial.write(bytes, 4);
 
     }
-  //   switch (temp)
-  //   {
-  //      case 0x40:
-  //   myCAM.OV2640_set_Light_Mode(Auto);temp = 0xff;
-  //   Serial.println(F("ACK CMD Set to Auto END"));break;
-  //    case 0x41:
-  //   myCAM.OV2640_set_Light_Mode(Sunny);temp = 0xff;
-  //   Serial.println(F("ACK CMD Set to Sunny END"));break;
-  //    case 0x42:
-  //   myCAM.OV2640_set_Light_Mode(Cloudy);temp = 0xff;
-  //   Serial.println(F("ACK CMD Set to Cloudy END"));break;
-  //    case 0x43:
-  //   myCAM.OV2640_set_Light_Mode(Office);temp = 0xff;
-  //   Serial.println(F("ACK CMD Set to Office END"));break;
-  //  case 0x44:
-  //   myCAM.OV2640_set_Light_Mode(Home);   temp = 0xff;
-  //  Serial.println(F("ACK CMD Set to Home END"));break;
-  //  case 0x50:
-  //   myCAM.OV2640_set_Color_Saturation(Saturation2); temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Saturation+2 END"));break;
-  //  case 0x51:
-  //    myCAM.OV2640_set_Color_Saturation(Saturation1); temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Saturation+1 END"));break;
-  //  case 0x52:
-  //   myCAM.OV2640_set_Color_Saturation(Saturation0); temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Saturation+0 END"));break;
-  //   case 0x53:
-  //   myCAM. OV2640_set_Color_Saturation(Saturation_1); temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Saturation-1 END"));break;
-  //   case 0x54:
-  //    myCAM.OV2640_set_Color_Saturation(Saturation_2); temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Saturation-2 END"));break; 
-  //  case 0x60:
-  //   myCAM.OV2640_set_Brightness(Brightness2); temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Brightness+2 END"));break;
-  //  case 0x61:
-  //    myCAM.OV2640_set_Brightness(Brightness1); temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Brightness+1 END"));break;
-  //  case 0x62:
-  //   myCAM.OV2640_set_Brightness(Brightness0); temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Brightness+0 END"));break;
-  //   case 0x63:
-  //   myCAM. OV2640_set_Brightness(Brightness_1); temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Brightness-1 END"));break;
-  //   case 0x64:
-  //    myCAM.OV2640_set_Brightness(Brightness_2); temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Brightness-2 END"));break; 
-  //   case 0x70:
-  //     myCAM.OV2640_set_Contrast(Contrast2);temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Contrast+2 END"));break; 
-  //   case 0x71:
-  //     myCAM.OV2640_set_Contrast(Contrast1);temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Contrast+1 END"));break;
-  //    case 0x72:
-  //     myCAM.OV2640_set_Contrast(Contrast0);temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Contrast+0 END"));break;
-  //   case 0x73:
-  //     myCAM.OV2640_set_Contrast(Contrast_1);temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Contrast-1 END"));break;
-  //  case 0x74:
-  //     myCAM.OV2640_set_Contrast(Contrast_2);temp = 0xff;
-  //    Serial.println(F("ACK CMD Set to Contrast-2 END"));break;
-  //  case 0x80:
-  //   myCAM.OV2640_set_Special_effects(Antique);temp = 0xff;
-  //   Serial.println(F("ACK CMD Set to Antique END"));break;
-  //  case 0x81:
-  //   myCAM.OV2640_set_Special_effects(Bluish);temp = 0xff;
-  //   Serial.println(F("ACK CMD Set to Bluish END"));break;
-  //  case 0x82:
-  //   myCAM.OV2640_set_Special_effects(Greenish);temp = 0xff;
-  //   Serial.println(F("ACK CMD Set to Greenish END"));break;  
-  //  case 0x83:
-  //   myCAM.OV2640_set_Special_effects(Reddish);temp = 0xff;
-  //   Serial.println(F("ACK CMD Set to Reddish END"));break;  
-  //  case 0x84:
-  //   myCAM.OV2640_set_Special_effects(BW);temp = 0xff;
-  //   Serial.println(F("ACK CMD Set to BW END"));break; 
-  // case 0x85:
-  //   myCAM.OV2640_set_Special_effects(Negative);temp = 0xff;
-  //   Serial.println(F("ACK CMD Set to Negative END"));break; 
-  // case 0x86:
-  //   myCAM.OV2640_set_Special_effects(BWnegative);temp = 0xff;
-  //   Serial.println(F("ACK CMD Set to BWnegative END"));break;   
-  //  case 0x87:
-  //   myCAM.OV2640_set_Special_effects(Normal);temp = 0xff;
-  //   Serial.println(F("ACK CMD Set to Normal END"));break;     
-  // }
-    
-  }
-
-//   if (temp == 1) {
-//     start_capture = 1;
-//   } else if (temp == 2) {
-//     start_capture = 0;
-//   }
-
-//   if (start_capture == 1) {
-
-//     myCAM.flush_fifo();
-//     myCAM.clear_fifo_flag();
-//     //Start capture
-//     myCAM.start_capture();
-//     start_capture = 0;
-
-//   } 
-//   if (myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK))
-//     {
-//       uint32_t length = 0;
-//       length = myCAM.read_fifo_length();
-//       if ((length >= MAX_FIFO_SIZE) | (length == 0))
-//       {
-//         myCAM.clear_fifo_flag();
-//         start_capture = 2;
-//         continue;
-//       }
-//       myCAM.CS_LOW();
-//       myCAM.set_fifo_burst();//Set fifo burst mode
-//       temp =  SPI.transfer(0x00);
-//       length --;
-//       while ( length-- )
-//       {
-//         temp_last = temp;
-//         temp =  SPI.transfer(0x00);
-//         if (is_header == true)
-//         {
-//           Serial.write(temp);
-//         }
-//         else if ((temp == 0xD8) & (temp_last == 0xFF))
-//         {
-//           is_header = true;
-//           Serial.println(F("ACK IMG END"));
-//           Serial.write(temp_last);
-//           Serial.write(temp);
-//         }
-//         if ( (temp == 0xD9) && (temp_last == 0xFF) ) //If find the end ,break while,
-//         break;
-//         delayMicroseconds(15);
-//       }
-//       myCAM.CS_HIGH();
-//       myCAM.clear_fifo_flag();
-//       start_capture = 2;
-//       is_header = false;
-//     }
+}
   
-// }
-// uint8_t read_fifo_burst(ArduCAM myCAM)
-// {
-//   uint8_t temp = 0, temp_last = 0;
-//   uint32_t length = 0;
-//   length = myCAM.read_fifo_length();
-//   // Serial.println("Reading Length");
-//   // Serial.println(length, DEC);
-//   if (length >= MAX_FIFO_SIZE) //512 kb
-//   {
-//     Serial.println(F("ACK CMD Over size. END"));
-//     return 0;
-//   }
-//   if (length == 0 ) //0 kb
-//   {
-//     Serial.println(F("ACK CMD Size is 0. END"));
-//     return 0;
-//   }
-//   myCAM.CS_LOW();
-//   myCAM.set_fifo_burst();//Set fifo burst mode
-//   temp =  SPI.transfer(0x00);
-//   Serial.write(0xFF);
-//   length --;
-//   while ( length-- )
-//   {
-//     temp_last = temp;
-//     temp =  SPI.transfer(0x00); //Send 0x00 to camera, capture return value in temp (one byte)
-//     if (is_header == true)
-//     {
-//       Serial.write(temp);
-//     }
-//     else if ((temp == 0xD8) & (temp_last == 0xFF))
-//     {
-//       is_header = true;
-//       // Serial.println(F("ACK IMG END"));
-//       Serial.write(temp_last);
-//       Serial.write(temp);
-//     }
-//     if ( (temp == 0xD9) && (temp_last == 0xFF) ) //If find the end ,break while,
-//     break;
-//     delayMicroseconds(15);
-//   }
-//   myCAM.CS_HIGH();
-//   is_header = false;
-//   return 1;
-// }

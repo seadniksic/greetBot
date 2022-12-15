@@ -5,13 +5,13 @@ import io
 import time
 import cv2
 import signal
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import mediapipe as mp
 from PIL import ImageFile
 import numpy as np
 import sys
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-ser = serial.Serial('COM3', 3000000, timeout=None)
+ser = serial.Serial('COM8', 3000000, timeout=None)
 img = bytearray(b'')
 img_width = 320
 img_height = 240
@@ -56,13 +56,13 @@ def main():
             
             cv2.waitKey(1)
 
-            print(f"closest face center: {closest_face_center}")
+            # print(f"closest face center: {closest_face_center}")
             ser.write(b'\x03')
 
-            print(closest_face_center)
+            # print(closest_face_center)
 
-            print(closest_face_center[0].to_bytes(2, 'little'))
-            print(closest_face_center[1].to_bytes(2, 'little'))
+            # print(closest_face_center[0].to_bytes(2, 'little'))
+            # print(closest_face_center[1].to_bytes(2, 'little'))
 
             ser.write(b'\xFF' + closest_face_center[0].to_bytes(2, 'little') + closest_face_center[1].to_bytes(2, 'little'))
 
@@ -77,10 +77,17 @@ def main():
             # print(type(temp_byte))
             # print(f"bytes received: {temp_byte}")
 
-            while ser.read() != b'\xFF': continue
+            # while ser.read() != b'\x04': 
+            #     # print('heeloo')
+            #     continue
 
-            temp_byte = ser.read(4)
-            print(f"bytes received: {temp_byte}")
+            # print(ser.readline()
+            # temp_byte = ser.read()
+            # print(temp_byte)
+            # print(temp_byte)
+            # print(temp_byte)
+            # print(f"bytes received: {temp_byte}")
+            # print(f"int rep: {int.from_bytes(temp_byte, 'big', signed=True)}")
                 # temp_coords.extend(temp_byte)
                 # if temp_byte != b'' and len(temp_coords) < 4:
                 #     temp_coords.append(temp_byte)
