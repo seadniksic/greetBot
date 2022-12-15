@@ -207,32 +207,12 @@ void loop() {
       xCoord = (faceCoords[1] << 8) + faceCoords[0];
       yCoord = (faceCoords[3] << 8) + faceCoords[2];
 
-      // coordsBuffer[0] = xCoord;
-
       diffX = centerX - xCoord;
       diffY = centerY - yCoord;
-
-      // diffBuffer[0] = diffX;
-      
-      // if (diffX < 0 ) {
-
-
-      // } else {
-
-      // }
-      // Serial.write(bytes, 4);
-
-      
-
-      // Serial.write(bytes, 2);
 
       if (xCoord != 0 || yCoord != 0) {
         // face found 
 
-        // diffX = centerX - xCoord;
-        // diffY = centerY - yCoord;
-
-        // diffBuffer[0] = diffX;
         if (abs(diffX) > 10) {
           base_angle = base.read();
           Kpx = diffX / 17;
@@ -241,9 +221,6 @@ void loop() {
               base.write(base_angle - abs((int) Kpx));
             }
           } else if (diffX >= 0) {
-
-            // Serial.write(0x04);
-            // Serial.write('f');
 
             if (base_angle < 160) {
               //CANNNOT WRITE 1 degree > base angle in this specific direction for some reason
@@ -261,9 +238,6 @@ void loop() {
             }
           } else if (diffY < 0) {
 
-            // Serial.write(0x04);
-            // Serial.write('f');
-
             if (cam_angle < 160) {
               //CANNNOT WRITE 1 degree > base angle in this specific direction for some reason
               cam.write(cam_angle + abs((int) (Kpy + 1)));
@@ -272,26 +246,6 @@ void loop() {
         }
 
       }
-
-      // Serial.write(bytes, 2);
-
-      // x1 = Serial.read();
-      // x2 = Serial.read();
-
-      // ArrayToInteger centerFaceX;
-      // ArrayToInteger centerFaceY;
-
-      // centerFaceX.array[0] = Serial.read();
-      // centerFaceX.array[1] = Serial.read();
-      // centerFaceY.array[0] = Serial.read();
-      // centerFaceY.array[1] = Serial.read();
-
-      // Serial.write(0xFF);
-
-      // coordsBuffer[0] = xCoord;
-      // coordsBuffer[1] = yCoord;
-
-      // Serial.write(bytes, 4);
 
     }
 }
